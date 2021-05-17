@@ -16,7 +16,7 @@ const D = console.log;
 const bn = x=>(new BigNumber(x));
 const uDecimals = bn('1e18')
 
-// truffle --network=dev exec deploy.js
+// truffle --network=develop exec deploy.js
 const TestAddresses = [
     "0x7A6Ed0a905053A21C15cB5b4F39b561B6A3FE50f",
     "0x7A6Ed0a905053A21C15cB5b4F39b561B6A3FE50f",
