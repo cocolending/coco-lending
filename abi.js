@@ -6,7 +6,7 @@ function outputABI(name) {
 }
 
 [
-    "ComptrollerInterface",
+    "ComptrollerG6",
     "CErc20",
     "EIP20Interface",
     "SimplePriceOracle"
