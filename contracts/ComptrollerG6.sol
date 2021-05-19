@@ -1403,12 +1403,15 @@ contract ComptrollerG6 is ComptrollerV5Storage, ComptrollerInterface, Comptrolle
     function getBlockNumber() public view returns (uint) {
         return block.number;
     }
-
+    address private _getCompAddress;
     /**
      * @notice Return the address of the COMP token
      * @return The address of COMP
      */
-    function getCompAddress() public view returns (address) {
-        return 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    function getCompAddress() public view returns(address) {
+        return _getCompAddress;
+    }
+    function setCompAddress(address newComd) external {
+        _getCompAddress = newComd;
     }
 }

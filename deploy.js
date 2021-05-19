@@ -54,7 +54,7 @@ async function mint(cToken, amount, account) {
     await uToken.approve(cToken.address, amount, {from:account});
     await cToken.mint(amount, {from:account});
     const cAfter = await cToken.balanceOf(account);
-    D(cAfter.toString());
+    D('mint:', amount.toString(), cAfter.toString());
     return cAfter - cBefore;
 }
 
@@ -92,7 +92,7 @@ async function main() {
     D("accounts", accounts);
     const comptroller = await deployUnitroller();
     D("comptroller", comptroller.address);
-    const baseRatePerYear = bn("0.02e18");  // + 2% apy
+    const baseRatePerYear = bn("0.00e18");  // + 2% apy
     const multiplierPerYear = bn("0.25e18"); // %25 apy
     const jumpMultiplierPerYear = bn("1e18"); // max 100% apy
     const kink_ = bn("0.8e18");
@@ -120,10 +120,13 @@ async function main() {
     const cUSDT = await deployCtoken(cTokenCode.address, accounts[0], 
         [wUSDT.address, comptroller.address, rateModel.address, btc_initialExchangeRateMantissa, "CUSDT", "CUSDT", await wUSDT.decimals()]
     );
-
+    const coco = await ERC20Mock.new("coco", "coco lending", 18);
+    await coco.mint(comptroller.address, bn('100000000e18'));
+    await comptroller.setCompAddress(coco.address);
     await comptroller._supportMarket(cBTC.address);
     await comptroller._supportMarket(cETH.address);
     await comptroller._supportMarket(cUSDT.address);
+    await comptroller._setCloseFactor(bn('0.3e18'));
     const marketBTC = await comptroller.markets(cBTC.address);
     const marketETH = await comptroller.markets(cETH.address);
     const marketUSDT = await comptroller.markets(cUSDT.address);
@@ -135,7 +138,7 @@ async function main() {
     const oracle = await Oracle.new();
     const btcPrice = await getPirce(cBTC.address, 50000);
     const ethPrice = await getPirce(cETH.address, 4000);
-    const usdtPrice = await getPirce(cUSDT.address, 4000);
+    const usdtPrice = await getPirce(cUSDT.address, 1);
     await oracle.setUnderlyingPrice(cBTC.address, btcPrice);
     await oracle.setUnderlyingPrice(cETH.address, ethPrice);
     await oracle.setUnderlyingPrice(cUSDT.address, usdtPrice);
@@ -143,6 +146,11 @@ async function main() {
     await comptroller._setCollateralFactor(cETH.address, bn('0.6e18'));
     await comptroller._setCollateralFactor(cBTC.address, bn('0.6e18'));
     await comptroller._setCollateralFactor(cUSDT.address, bn('0.6e18'));
+    await comptroller._setLiquidationIncentive(bn('1.1e18'));
+    const reserveFactorMantissa = bn('0.075e18');
+    await cETH._setReserveFactor(reserveFactorMantissa);
+    await cBTC._setReserveFactor(reserveFactorMantissa);
+    await cUSDT._setReserveFactor(reserveFactorMantissa);
 
     for(let i = 0; i < TestAddresses.length; i++){
         const tester = TestAddresses[i];
@@ -152,18 +160,28 @@ async function main() {
         await wUSDT.mint(tester, bn('100000000e18'));
     }
     
-    if(false){
-        await mint(cETH, bn("10e18"), accounts[5]);
+    if(true) {
+        await mint(cETH, bn("10e18"), accounts[4]);
         await mint(cBTC, bn("1e8"), accounts[5]);
-        await mint(cUSDT, bn("10000e18"), accounts[5]);
+        await mint(cUSDT, bn("10000e18"), accounts[4]);
 
         await comptroller.enterMarkets([cETH.address, cBTC.address, cUSDT.address], {from:accounts[5]});
-        await cBTC.borrow(bn("1e8"), {from:accounts[5]});
-        await cETH.borrow(bn("2e8"), {from:accounts[5]});
+        //await cBTC.borrow(bn("1e8"), {from:accounts[5]});
+        await cETH.borrow(bn("7.5e18"), {from:accounts[5]});
         //await cETH.borrow(bn("2e8"), {from:accounts[5]});
 
-        D((await wETH.balanceOf(accounts[5])).toString());
-        D((await wBTC.balanceOf(accounts[5])).toString());
+        D("borrowed:", (await wETH.balanceOf(accounts[5])).toString());
+        //D((await wBTC.balanceOf(accounts[5])).toString());
+
+        const ethPrice = await getPirce(cETH.address, 5000);
+        await oracle.setUnderlyingPrice(cETH.address, ethPrice);
+
+        await wETH.mint(accounts[2], bn('2e18'));
+        await wETH.approve(cETH.address, bn('2e18'), {from:accounts[2]});
+        await cETH.liquidateBorrow(accounts[5], bn('1e18'), cBTC.address, {from:accounts[2]});
+        //const r = await cETH.liquidateBorrow.call(accounts[5], bn('1e18'), cBTC.address, {from:accounts[2]});
+        D("liquidate:", Number(await cBTC.balanceOf(accounts[2])));
+        //return;
     }
     const contracts =
     {
@@ -189,6 +207,7 @@ async function main() {
     D((await wETH.balanceOf(accounts[5])).toString());
     D((await wBTC.balanceOf(accounts[5])).toString());
     //D((await wBTC.balanceOf(accounts[5])).toString());
+    */
 /*
     const fakeC = await CUpgradeTest.new();
     await upgradeCtoken(cETH, fakeC.address);
@@ -196,6 +215,17 @@ async function main() {
     D("cName:", (await cETH.balanceOf(accounts[5])).toString(16));
     D("compRate:", (await comptroller.compRate()).toString());
 */
+    //const reserveFactorMantissa = await cETH.reserveFactorMantissa();
+    const closeFactorMantissa = await comptroller.closeFactorMantissa();
+    const exRate = await cETH.exchangeRateStored();
+    const ethBorrowRate = await cETH.borrowRatePerBlock();
+    const ethSupplyRate = await cETH.supplyRatePerBlock();
+    const apy = rate=>((Number(rate)*(24*3600/2)/1e18+1))**365-1;
+    D("closeFactor:", Number(closeFactorMantissa)/1e18)
+    D("reserveFactor:", Number(reserveFactorMantissa)/1e18)
+    D("exRate:", Number(exRate)/1e18);
+    D("borrow:", Number(ethBorrowRate), apy(ethBorrowRate));
+    D("supply:", Number(ethSupplyRate), apy(ethSupplyRate));
 }
 
 module.exports = function (cbk) {
