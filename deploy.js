@@ -185,21 +185,31 @@ async function main() {
     }
     const contracts =
     {
-        BTC:{
-            underlying:wBTC.address,
-            cToken:cBTC.address,
-        },
-        ETH:{
-            underlying:wETH.address,
-            cToken:cETH.address,
-        },
-        USDT:{
-            underlying:wUSDT.address,
-            cToken:cUSDT.address,
-        },
+        LPS:[
+            {
+                name: 'WBTC',
+                decimals: 8,
+                collateral: true,
+                underlying:wBTC.address,
+                cToken:cBTC.address,
+            },
+            {
+                name: 'WETH',
+                decimals: 18,
+                collateral: true,
+                underlying:wETH.address,
+                cToken:cETH.address,
+            },
+            {
+                name: 'USDT',
+                decimals: 18,
+                collateral: true,
+                underlying:wUSDT.address,
+                cToken:cUSDT.address,
+            },
+        ],
         oracle: oracle.address,
         comptroller:comptroller.address
-
     };
     fs.writeFileSync('address.json', JSON.stringify(contracts));
     /*
