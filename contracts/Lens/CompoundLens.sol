@@ -42,20 +42,20 @@ interface GovernorBravoInterface {
 
 contract CompoundLens {
     struct CTokenMetadata {
-        address cToken;
-        uint exchangeRateCurrent;
-        uint supplyRatePerBlock;
-        uint borrowRatePerBlock;
-        uint reserveFactorMantissa;
-        uint totalBorrows;
-        uint totalReserves;
-        uint totalSupply;
-        uint totalCash;
-        bool isListed;
-        uint collateralFactorMantissa;
-        address underlyingAssetAddress;
-        uint cTokenDecimals;
-        uint underlyingDecimals;
+        address cToken; // cToken地址
+        uint exchangeRateCurrent; // 市场兑换率
+        uint supplyRatePerBlock;  // 存款利率
+        uint borrowRatePerBlock;  // 借款利率
+        uint reserveFactorMantissa; // 预留率
+        uint totalBorrows;  // 总借款(未统计利息)
+        uint totalReserves; // 总预留
+        uint totalSupply;   // cToken总量
+        uint totalCash;     // 剩余总现金
+        bool isListed;      // 支持中
+        uint collateralFactorMantissa; // 抵押率
+        address underlyingAssetAddress; // 底层资产
+        uint cTokenDecimals;  // ctoken精度
+        uint underlyingDecimals; // 底层资产精度
     }
 
     function cTokenMetadata(CToken cToken) public returns (CTokenMetadata memory) {
@@ -102,18 +102,18 @@ contract CompoundLens {
     }
 
     struct CTokenBalances {
-        address cToken;
-        uint balanceOf;
-        uint borrowBalanceCurrent;
-        uint balanceOfUnderlying;
-        uint tokenBalance;
-        uint tokenAllowance;
+        address cToken; // ctoken地址
+        uint balanceOf; // ctoken数量
+        uint borrowBalanceCurrent; // 待还借款（贷+利）
+        uint balanceOfUnderlying; // 存款(本+利)
+        uint tokenBalance; // 底层资产钱包余额
+        uint tokenAllowance; // approve
     }
 
     function cTokenBalances(CToken cToken, address payable account) public returns (CTokenBalances memory) {
         uint balanceOf = cToken.balanceOf(account);
         uint borrowBalanceCurrent = cToken.borrowBalanceCurrent(account);
-        uint balanceOfUnderlying = cToken.balanceOfUnderlying(account);
+        uint balanceOfUnderlying = cToken.balance1OfUnderlying(account);
         uint tokenBalance;
         uint tokenAllowance;
 
@@ -147,8 +147,8 @@ contract CompoundLens {
     }
 
     struct CTokenUnderlyingPrice {
-        address cToken;
-        uint underlyingPrice;
+        address cToken; // cToken address
+        uint underlyingPrice; // underlyingPrice
     }
 
     function cTokenUnderlyingPrice(CToken cToken) public returns (CTokenUnderlyingPrice memory) {
@@ -171,9 +171,9 @@ contract CompoundLens {
     }
 
     struct AccountLimits {
-        CToken[] markets;
-        uint liquidity;
-        uint shortfall;
+        CToken[] markets; // 用户存借ctoken列表
+        uint liquidity; // 抵押估值-借款市值
+        uint shortfall; // 借款市值-抵押估值
     }
 
     function getAccountLimits(ComptrollerLensInterface comptroller, address account) public returns (AccountLimits memory) {

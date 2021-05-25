@@ -6,6 +6,7 @@ const Oracle = artifacts.require("SimplePriceOracle");
 const CErc20 = artifacts.require("CErc20");
 const CErc20Delegate = artifacts.require("CErc20Delegate");
 const CErc20Delegator = artifacts.require("CErc20Delegator");
+const CompoundLens = artifacts.require("CompoundLens");
 
 const CUpgradeTest = artifacts.require("CUpgradeTest");
 const fs = require('fs');
@@ -183,6 +184,8 @@ async function main() {
         D("liquidate:", Number(await cBTC.balanceOf(accounts[2])));
         //return;
     }
+
+    const compoundLens = await CompoundLens.new();
     const contracts =
     {
         LPS:[
@@ -209,7 +212,8 @@ async function main() {
             },
         ],
         oracle: oracle.address,
-        comptroller:comptroller.address
+        comptroller:comptroller.address,
+        compoundLens: compoundLens.address
     };
     fs.writeFileSync('address.json', JSON.stringify(contracts));
     /*
