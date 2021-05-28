@@ -1,3 +1,5 @@
+const HDWalletProvider = require('truffle-hdwallet-provider-privkey');
+const privateKeys = ""
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
@@ -46,6 +48,10 @@ module.exports = {
       host: "127.0.0.1",     // Localhost (default: none)
       port: 9545,            // Standard Ethereum port (default: none)
       network_id: "*",       // Any network (default: none)
+    },
+    heco: {
+      provider: () => new HDWalletProvider([privateKeys], "https://http-testnet.hecochain.com"),
+      network_id: "256",       // Any network (default: none)
     },
     // Another network with more advanced options...
     // advanced: {
