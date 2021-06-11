@@ -3,3 +3,5 @@ abi
 yarn.lock
 node_modules
 address.json
+*.bak
+fmt.sol

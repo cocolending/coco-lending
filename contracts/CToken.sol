@@ -407,11 +407,11 @@ contract CToken is CTokenInterface, Exponential, TokenErrorReporter {
 
         /*
          * Calculate the interest accumulated into borrows and reserves and the new index:
-         *  simpleInterestFactor = borrowRate * blockDelta
+         *  simpleInterestFactor = borrowRate * blockDelta  // 0.x decimals
          *  interestAccumulated = simpleInterestFactor * totalBorrows
-         *  totalBorrowsNew = interestAccumulated + totalBorrows
-         *  totalReservesNew = interestAccumulated * reserveFactor + totalReserves
-         *  borrowIndexNew = simpleInterestFactor * borrowIndex + borrowIndex
+         *  totalBorrowsNew = interestAccumulated + totalBorrows // totalBorrowsNew = totalBorrows*(1+simpleInterestFactor)
+         *  totalReservesNew = interestAccumulated * reserveFactor + totalReserves // 
+         *  borrowIndexNew = simpleInterestFactor * borrowIndex + borrowIndex // borrowIndexNew = borrowIndex*(1+simpleInterestFactor)
          */
 
         Exp memory simpleInterestFactor;

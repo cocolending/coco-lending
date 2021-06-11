@@ -1,5 +1,6 @@
 const Unitroller = artifacts.require("Unitroller");
 const ComptrollerG6 = artifacts.require("ComptrollerG6");
+const CocoDistributor = artifacts.require("CocoDistributor");
 const JumpRateModelV2 = artifacts.require("JumpRateModelV2");
 const ERC20Mock = artifacts.require("ERC20Mock");
 const Oracle = artifacts.require("SimplePriceOracle");
@@ -20,7 +21,8 @@ const uDecimals = bn('1e18')
 // truffle --network=develop exec deploy.js
 const TestAddresses = [
     "0x7A6Ed0a905053A21C15cB5b4F39b561B6A3FE50f",
-    "0x7A6Ed0a905053A21C15cB5b4F39b561B6A3FE50f",
+    "0x855Ac656956AF761439f4a451c872E812E3900a4",
+    "0x7806E77aE5C1726845762A983291241bc3a3f854"
 ]
 
 async function getPirce(cToken, price) {
@@ -60,6 +62,7 @@ async function mint(cToken, amount, account) {
 }
 
 async function deployCtoken(codeAddress, admin, argv) {
+    D('deployCtoken...', argv);
     const delegator = await CErc20Delegator.new(...[...argv, admin, codeAddress, '0x']);
     return await CErc20.at(delegator.address);
 }
@@ -79,6 +82,19 @@ async function deployUnitroller() {
     return ComptrollerG6.at(unitroller.address);
 }
 
+async function deployCocoDistributor() {
+    const unitroller = await Unitroller.new();
+    const distributor = await CocoDistributor.new();
+    await unitroller._setPendingImplementation(distributor.address);
+    await distributor._become(unitroller.address);
+    return CocoDistributor.at(unitroller.address);
+}
+
+async function configCoco(_distributor, markets) {
+    const distributor = await CocoDistributor.at(_distributor.address);
+    await distributor._addCompMarkets(markets);
+    await distributor._setCompRate(66590563165905);
+}
 
 async function upgradeUnitroller(_unitroller, codeAddress) {
     const unitroller = await Unitroller.at(_unitroller.address);
@@ -93,6 +109,8 @@ async function main() {
     D("accounts", accounts);
     const comptroller = await deployUnitroller();
     D("comptroller", comptroller.address);
+    const distributor = await deployCocoDistributor();
+    D("distributor", distributor.address);
     const baseRatePerYear = bn("0.00e18");  // + 2% apy
     const multiplierPerYear = bn("0.25e18"); // %25 apy
     const jumpMultiplierPerYear = bn("1e18"); // max 100% apy
@@ -121,9 +139,12 @@ async function main() {
     const cUSDT = await deployCtoken(cTokenCode.address, accounts[0], 
         [wUSDT.address, comptroller.address, rateModel.address, btc_initialExchangeRateMantissa, "CUSDT", "CUSDT", await wUSDT.decimals()]
     );
+    D("config...")
     const coco = await ERC20Mock.new("coco", "coco lending", 18);
-    await coco.mint(comptroller.address, bn('100000000e18'));
-    await comptroller.setCompAddress(coco.address);
+    await coco.mint(distributor.address, bn('100000000e18'));
+    await distributor.setCoco(coco.address);
+    await distributor.setComptroller(comptroller.address);
+    await comptroller.setDistributor(distributor.address);
     await comptroller._supportMarket(cBTC.address);
     await comptroller._supportMarket(cETH.address);
     await comptroller._supportMarket(cUSDT.address);
@@ -139,7 +160,7 @@ async function main() {
     const oracle = await Oracle.new();
     const ownerOracle = await oracle.owner();
     console.log("owner:", ownerOracle, owner);
-    const feeder = accounts[1];
+    const feeder = accounts[0];
     await oracle.add(feeder);
     const btcPrice = await getPirce(cBTC.address, 50000);
     const ethPrice = await getPirce(cETH.address, 4000);
@@ -157,7 +178,10 @@ async function main() {
     await cBTC._setReserveFactor(reserveFactorMantissa);
     await cUSDT._setReserveFactor(reserveFactorMantissa);
 
+    await configCoco(distributor, [cETH.address, cBTC.address, cUSDT.address]);
+
     for(let i = 0; i < TestAddresses.length; i++){
+        D('mint faucet:', i, TestAddresses[i]);
         const tester = TestAddresses[i];
         await web3.eth.sendTransaction({from: accounts[0], to:tester, value:bn(2e18)});
         await wBTC.mint(tester, bn('1000e8'));
@@ -166,6 +190,7 @@ async function main() {
     }
     
     if(true) {
+        D('borrow test:');
         await mint(cETH, bn("10e18"), accounts[4]);
         await mint(cBTC, bn("1e8"), accounts[5]);
         await mint(cUSDT, bn("10000e18"), accounts[4]);
@@ -178,14 +203,19 @@ async function main() {
         D("borrowed:", (await wETH.balanceOf(accounts[5])).toString());
         //D((await wBTC.balanceOf(accounts[5])).toString());
 
-        const ethPrice = await getPirce(cETH.address, 5000);
-        await oracle.setUnderlyingPrice(cETH.address, ethPrice);
+        //const ethPrice = await getPirce(cETH.address, 5000);
+        //await oracle.setUnderlyingPrice(cETH.address, ethPrice);
 
         await wETH.mint(accounts[2], bn('2e18'));
         await wETH.approve(cETH.address, bn('2e18'), {from:accounts[2]});
-        await cETH.liquidateBorrow(accounts[5], bn('1e18'), cBTC.address, {from:accounts[2]});
+        //await cETH.liquidateBorrow(accounts[5], bn('1e18'), cBTC.address, {from:accounts[2]});
         //const r = await cETH.liquidateBorrow.call(accounts[5], bn('1e18'), cBTC.address, {from:accounts[2]});
         D("liquidate:", Number(await cBTC.balanceOf(accounts[2])));
+        await distributor.refreshCompSpeeds();
+        await distributor.claimComp(accounts[5]);
+        const x = await coco.balanceOf(accounts[5]);
+        D("coco balance:", x.toString())
+        //await distributor.claimComp(accounts[2]);
         //return;
     }
 
@@ -217,9 +247,14 @@ async function main() {
         ],
         oracle: oracle.address,
         comptroller:comptroller.address,
-        compoundLens: compoundLens.address
+        compoundLens: compoundLens.address,
+        coco: coco.address,
+        distributor: distributor.address
     };
-    fs.writeFileSync('address.json', JSON.stringify(contracts));
+    const addresses = require('./address.json');
+    const chainId = await web3.eth.getChainId();
+    addresses[chainId] = contracts;
+    fs.writeFileSync('./address.json', JSON.stringify(addresses));
     /*
     //D(r.toString());
     D((await wETH.balanceOf(accounts[5])).toString());
