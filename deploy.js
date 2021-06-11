@@ -19,11 +19,6 @@ const bn = x=>(new BigNumber(x));
 const uDecimals = bn('1e18')
 
 // truffle --network=develop exec deploy.js
-const TestAddresses = [
-    "0x7A6Ed0a905053A21C15cB5b4F39b561B6A3FE50f",
-    "0x855Ac656956AF761439f4a451c872E812E3900a4",
-    "0x7806E77aE5C1726845762A983291241bc3a3f854"
-]
 
 async function getPirce(cToken, price) {
     // uPirce * uDecimals / tokenDecimals
@@ -180,44 +175,12 @@ async function main() {
 
     await configCoco(distributor, [cETH.address, cBTC.address, cUSDT.address]);
 
-    for(let i = 0; i < TestAddresses.length; i++){
-        D('mint faucet:', i, TestAddresses[i]);
-        const tester = TestAddresses[i];
-        await web3.eth.sendTransaction({from: accounts[0], to:tester, value:bn(2e18)});
-        await wBTC.mint(tester, bn('1000e8'));
-        await wETH.mint(tester, bn('10000e18'));
-        await wUSDT.mint(tester, bn('100000000e18'));
-    }
-    
-    if(true) {
-        D('borrow test:');
-        await mint(cETH, bn("10e18"), accounts[4]);
-        await mint(cBTC, bn("1e8"), accounts[5]);
-        await mint(cUSDT, bn("10000e18"), accounts[4]);
 
-        await comptroller.enterMarkets([cETH.address, cBTC.address, cUSDT.address], {from:accounts[5]});
-        //await cBTC.borrow(bn("1e8"), {from:accounts[5]});
-        await cETH.borrow(bn("7.5e18"), {from:accounts[5]});
-        //await cETH.borrow(bn("2e8"), {from:accounts[5]});
-
-        D("borrowed:", (await wETH.balanceOf(accounts[5])).toString());
-        //D((await wBTC.balanceOf(accounts[5])).toString());
-
-        //const ethPrice = await getPirce(cETH.address, 5000);
-        //await oracle.setUnderlyingPrice(cETH.address, ethPrice);
-
-        await wETH.mint(accounts[2], bn('2e18'));
-        await wETH.approve(cETH.address, bn('2e18'), {from:accounts[2]});
-        //await cETH.liquidateBorrow(accounts[5], bn('1e18'), cBTC.address, {from:accounts[2]});
-        //const r = await cETH.liquidateBorrow.call(accounts[5], bn('1e18'), cBTC.address, {from:accounts[2]});
-        D("liquidate:", Number(await cBTC.balanceOf(accounts[2])));
-        await distributor.refreshCompSpeeds();
-        await distributor.claimComp(accounts[5]);
-        const x = await coco.balanceOf(accounts[5]);
-        D("coco balance:", x.toString())
-        //await distributor.claimComp(accounts[2]);
-        //return;
-    }
+    D('mint faucet:',owner);
+    const tester = owner;
+    await wBTC.mint(tester, bn('100000e8'));
+    await wETH.mint(tester, bn('1000000e18'));
+    await wUSDT.mint(tester, bn('1000000000e18'));
 
     const compoundLens = await CompoundLens.new();
     const contracts =
@@ -251,8 +214,8 @@ async function main() {
         coco: coco.address,
         distributor: distributor.address
     };
-    const addresses = require('./address.json');
-    const chainId = await web3.eth.getChainId();
+    const addresses = [];
+    const chainId = 4;
     addresses[chainId] = contracts;
     fs.writeFileSync('./address.json', JSON.stringify(addresses));
     /*
