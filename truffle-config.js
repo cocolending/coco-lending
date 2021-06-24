@@ -1,4 +1,5 @@
-const HDWalletProvider = require('truffle-hdwallet-provider-privkey');
+const HDWalletProvider = require("@truffle/hdwallet-provider");
+
 const privateKeys = ""
 /**
  * Use this file to configure your truffle project. It's seeded with some
@@ -46,13 +47,33 @@ module.exports = {
     //
     develop: {
       host: "127.0.0.1",     // Localhost (default: none)
-      port: 9545,            // Standard Ethereum port (default: none)
+      port: 7545,            // Standard Ethereum port (default: none)
       network_id: "*",       // Any network (default: none)
     },
     heco: {
       provider: () => new HDWalletProvider([privateKeys], "https://http-testnet.hecochain.com"),
       network_id: "256",       // Any network (default: none)
     },
+    okex: {
+      provider: () => new HDWalletProvider([privateKeys], "https://exchaintestrpc.okex.org"),
+      network_id: "65",       // Any network (default: none)
+    },
+    bsctestnet: {
+      provider: () => new HDWalletProvider([privateKeys], `https://data-seed-prebsc-1-s1.binance.org:8545`),
+      network_id: 97,
+      confirmations: 10,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+    },
+    rinkeby: {
+      provider: new HDWalletProvider(
+        [privateKeys], // Array of account private keys
+          `https://rinkeby.infura.io/v3`// Url to an Ethereum Node
+      ),
+      network_id: 4,
+      skipDryRun: true,
+    },
+
     // Another network with more advanced options...
     // advanced: {
     // port: 8777,             // Custom port

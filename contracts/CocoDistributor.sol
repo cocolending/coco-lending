@@ -168,6 +168,10 @@ contract CocoDistributor is CocoDistributorStorageV1, ExponentialNoError {
         Double memory borrowerIndex = Double({mantissa: compBorrowerIndex[cToken][borrower]});
         compBorrowerIndex[cToken][borrower] = borrowIndex.mantissa;
         if (borrowerIndex.mantissa > 0) {
+<<<<<<< HEAD
+=======
+
+>>>>>>> e155f3478c797446cab7041902fe84188fffa0bb
             Double memory deltaIndex = sub_(borrowIndex, borrowerIndex);
             uint borrowerAmount = div_(CToken(cToken).borrowBalanceStored(borrower), marketBorrowIndex);
             uint borrowerDelta = mul_(borrowerAmount, deltaIndex);
@@ -336,6 +340,10 @@ contract CocoDistributor is CocoDistributorStorageV1, ExponentialNoError {
         for (uint i = 0; i < cTokens.length; i++) {
             _addCompMarketInternal(cTokens[i]);
         }
+<<<<<<< HEAD
+=======
+
+>>>>>>> e155f3478c797446cab7041902fe84188fffa0bb
         refreshCompSpeedsInternal();
     }
 
