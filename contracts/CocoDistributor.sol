@@ -6,7 +6,6 @@ import "./Exponential.sol";
 import "./CocoDistributorStorage.sol";
 import "./Governance/Comp.sol";
 import "./Unitroller.sol";
-import "./fmt.sol";
 
 contract CocoDistributor is CocoDistributorStorageV1, ExponentialNoError {
 /// @notice Emitted when market comped status is changed
@@ -73,17 +72,11 @@ contract CocoDistributor is CocoDistributorStorageV1, ExponentialNoError {
         Exp[] memory utilities = new Exp[](allMarkets_.length);
         for (uint i = 0; i < allMarkets_.length; i++) {
             CToken cToken = allMarkets_[i];
-            fmt.Printf("refreshCompSpeedsInternal-2: %d %x", abi.encode(i, cToken));
             if (isComped[address(cToken)]) {
-                fmt.Printf("refreshCompSpeedsInternal-2-1: %x", abi.encode(oracle));
                 Exp memory assetPrice = Exp({mantissa: oracle.getUnderlyingPrice(cToken)});
-
-                fmt.Printf("refreshCompSpeedsInternal-2-2");
                 Exp memory utility = mul_(assetPrice, cToken.totalBorrows());
-                fmt.Printf("refreshCompSpeedsInternal-2-3");
                 utilities[i] = utility;
                 totalUtility = add_(totalUtility, utility);
-                fmt.Printf("refreshCompSpeedsInternal-2-4");
             }
         }
 
@@ -155,9 +148,7 @@ contract CocoDistributor is CocoDistributorStorageV1, ExponentialNoError {
         if (supplierIndex.mantissa == 0 && supplyIndex.mantissa > 0) {
             supplierIndex.mantissa = compInitialIndex;
         }
-        fmt.Printf("_distributeSupplierComp sub-1: %d %d", abi.encode(supplyIndex.mantissa, supplierIndex.mantissa));
         Double memory deltaIndex = sub_(supplyIndex, supplierIndex);
-        fmt.Printf("_distributeSupplierComp sub-2");
         uint supplierTokens = CToken(cToken).balanceOf(supplier);
         uint supplierDelta = mul_(supplierTokens, deltaIndex);
         uint supplierAccrued = add_(compAccrued[supplier], supplierDelta);
@@ -176,12 +167,8 @@ contract CocoDistributor is CocoDistributorStorageV1, ExponentialNoError {
         Double memory borrowIndex = Double({mantissa: borrowState.index});
         Double memory borrowerIndex = Double({mantissa: compBorrowerIndex[cToken][borrower]});
         compBorrowerIndex[cToken][borrower] = borrowIndex.mantissa;
-        fmt.Printf("borrowerIndex.mantissa:%d", abi.encode(borrowerIndex.mantissa));
         if (borrowerIndex.mantissa > 0) {
-
-            fmt.Printf("_distributeBorrowerComp sub-1: %d %d", abi.encode(borrowIndex.mantissa, borrowerIndex.mantissa));
             Double memory deltaIndex = sub_(borrowIndex, borrowerIndex);
-            fmt.Printf("_distributeBorrowerComp sub-2: %d %d", abi.encode(borrowIndex.mantissa, borrowerIndex.mantissa));
             uint borrowerAmount = div_(CToken(cToken).borrowBalanceStored(borrower), marketBorrowIndex);
             uint borrowerDelta = mul_(borrowerAmount, deltaIndex);
             uint borrowerAccrued = add_(compAccrued[borrower], borrowerDelta);
@@ -216,9 +203,7 @@ contract CocoDistributor is CocoDistributorStorageV1, ExponentialNoError {
     function updateContributorRewards(address contributor) public {
         uint compSpeed = compContributorSpeeds[contributor];
         uint blockNumber = getBlockNumber();
-            fmt.Printf("updateContributorRewards sub-1: %d %d", abi.encode(blockNumber, lastContributorBlock[contributor]));
         uint deltaBlocks = sub_(blockNumber, lastContributorBlock[contributor]);
-            fmt.Printf("updateContributorRewards sub-2: %d %d");
         if (deltaBlocks > 0 && compSpeed > 0) {
             uint newAccrued = mul_(deltaBlocks, compSpeed);
             uint contributorAccrued = add_(compAccrued[contributor], newAccrued);
@@ -349,11 +334,8 @@ contract CocoDistributor is CocoDistributorStorageV1, ExponentialNoError {
         require(adminOrInitializing(), "only admin can add comp market");
 
         for (uint i = 0; i < cTokens.length; i++) {
-            fmt.Printf("_addCompMarkets: %d %x", abi.encode(i, cTokens[i]));
             _addCompMarketInternal(cTokens[i]);
         }
-
-        fmt.Printf("refreshCompSpeedsInternal");
         refreshCompSpeedsInternal();
     }
 

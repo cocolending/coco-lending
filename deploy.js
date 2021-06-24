@@ -255,6 +255,19 @@ async function main() {
     const chainId = await web3.eth.getChainId();
     addresses[chainId] = contracts;
     fs.writeFileSync('./address.json', JSON.stringify(addresses));
+    
+    const ids = Object.keys(addresses);
+    const oracleJson = ids.map(id=>{
+        const contract = addresses[id];
+        const LPS = contract.LPS;
+        const oracle = contract.oracle;
+        return {
+            network: id,
+            oracle,
+            tokens: LPS.map(lp=>({name:lp.name, address:lp.cToken, underlyingDecimals:lp.decimals}))
+        }
+    });
+    fs.writeFileSync('./oracle.json', JSON.stringify(oracleJson));
     /*
     //D(r.toString());
     D((await wETH.balanceOf(accounts[5])).toString());

@@ -64,6 +64,7 @@ contract Access is Ownable {
 
 contract SimplePriceOracle is PriceOracle, Access {
     mapping(address => uint) prices;
+    uint256 public lastUpdate;
     event PricePosted(address asset, uint previousPriceMantissa, uint requestedPriceMantissa, uint newPriceMantissa);
 
     function getUnderlyingPrice(CToken cToken) public view returns (uint) {
@@ -74,7 +75,18 @@ contract SimplePriceOracle is PriceOracle, Access {
         }
     }
 
+    function setUnderlyingPriceBatch(CToken[] calldata cTokens, uint[] calldata underlyingPriceMantissas, uint updateTime) external onlyFeeder {
+        require(updateTime > lastUpdate, "repeat price");
+        for(uint i = 0; i < cTokens.length; i++) 
+            _setUnderlyingPrice(cTokens[i], underlyingPriceMantissas[i]);
+        lastUpdate = updateTime;
+    }
+
     function setUnderlyingPrice(CToken cToken, uint underlyingPriceMantissa) external onlyFeeder {
+        _setUnderlyingPrice(cToken, underlyingPriceMantissa);
+    }
+
+    function _setUnderlyingPrice(CToken cToken, uint underlyingPriceMantissa) private {
         address asset = address(CErc20(address(cToken)).underlying());
         emit PricePosted(asset, prices[asset], underlyingPriceMantissa, underlyingPriceMantissa);
         prices[asset] = underlyingPriceMantissa;

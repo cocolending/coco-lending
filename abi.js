@@ -9,7 +9,7 @@ function outputABI(name) {
     "ComptrollerG6",
     "CErc20",
     "EIP20Interface",
-    "SimplePriceOracle",
+    "PriceOracle",
     "CompoundLens",
     "CocoDistributor"
 ].forEach(outputABI);

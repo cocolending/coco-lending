@@ -7,6 +7,7 @@ import "../PriceOracle.sol";
 import "../EIP20Interface.sol";
 import "../Governance/GovernorAlpha.sol";
 import "../Governance/Comp.sol";
+import "../CocoDistributor.sol";
 
 interface ComptrollerLensInterface {
     function markets(address) external view returns (bool, uint);
@@ -184,6 +185,26 @@ contract CompoundLens {
             markets: comptroller.getAssetsIn(account),
             liquidity: liquidity,
             shortfall: shortfall
+        });
+    }
+
+    struct CocoBalanceMetadataExt {
+        uint balance;
+        uint allocated;
+    }
+
+    function getCocoBalanceMetadataExt(CocoDistributor distributor, address account) external returns (CocoBalanceMetadataExt memory) {
+        Comp comp = Comp(distributor.coco());
+        uint balance = comp.balanceOf(account);
+        distributor.claimComp(account);
+        uint newBalance = comp.balanceOf(account);
+        uint accrued = distributor.compAccrued(account);
+        uint total = add(accrued, newBalance, "sum comp total");
+        uint allocated = sub(total, balance, "sub allocated");
+
+        return CocoBalanceMetadataExt({
+            balance: balance,
+            allocated: allocated
         });
     }
 
