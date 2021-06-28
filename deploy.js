@@ -18,6 +18,12 @@ const D = console.log;
 const bn = x=>(new BigNumber(x));
 const uDecimals = bn('1e18')
 
+const TestAddresses = [
+    "0x7A6Ed0a905053A21C15cB5b4F39b561B6A3FE50f",
+    "0x855Ac656956AF761439f4a451c872E812E3900a4",
+    "0x7806E77aE5C1726845762A983291241bc3a3f854"
+]
+
 // truffle --network=develop exec deploy.js
 
 async function getPirce(cToken, price) {
@@ -176,12 +182,14 @@ async function main() {
     await configCoco(distributor, [cETH.address, cBTC.address, cUSDT.address]);
 
 
-    D('mint faucet:',owner);
-    const tester = owner;
-    await wBTC.mint(tester, bn('100000e8'));
-    await wETH.mint(tester, bn('1000000e18'));
-    await wUSDT.mint(tester, bn('1000000000e18'));
-
+    for(let i = 0; i < TestAddresses.length; i++){
+        D('mint faucet:', i, TestAddresses[i]);
+        const tester = TestAddresses[i];
+        await web3.eth.sendTransaction({from: accounts[0], to:tester, value:bn(2e18)});
+        await wBTC.mint(tester, bn('1000e8'));
+        await wETH.mint(tester, bn('10000e18'));
+        await wUSDT.mint(tester, bn('100000000e18'));
+    }
     const compoundLens = await CompoundLens.new();
     const contracts =
     {
@@ -214,8 +222,8 @@ async function main() {
         coco: coco.address,
         distributor: distributor.address
     };
-    const addresses = [];
-    const chainId = 4;
+    const addresses = fs.existsSync('./address.json') ? require('./address.json') : {}; // {chainID:contracts,}
+    const chainId = await web3.eth.getChainId();
     addresses[chainId] = contracts;
     fs.writeFileSync('./address.json', JSON.stringify(addresses));
     

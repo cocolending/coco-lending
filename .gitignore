@@ -5,3 +5,4 @@ node_modules
 address.json
 *.bak
 fmt.sol
+.pri.json

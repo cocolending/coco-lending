@@ -1,5 +1,5 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-const privateKeys = ""
+const privateKeys = require("./.pri.json")
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
@@ -57,7 +57,6 @@ module.exports = {
       provider: () => new HDWalletProvider([privateKeys], "https://api.s0.b.hmny.io"),
       network_id: '1666700000',       // Any network (default: none)
       skipDryRun: true,
-      
     },
     // Another network with more advanced options...
     // advanced: {
